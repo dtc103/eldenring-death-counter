@@ -392,7 +392,13 @@ FodyWeavers.xsd
 *.msi
 *.msix
 *.msm
+
+
 *.msp
 
 # JetBrains Rider
 *.sln.iml
+
+# Other files
+*.json
+.*ipynb
