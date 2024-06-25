@@ -1,65 +1,81 @@
-from FrameCapture import FrameCapture
-from ImageAnalyzer import ImageAnalyzerProcess
-#import queue
-import multiprocessing
+from FrameCapturer import FrameCapturer
+from ImageAnalyzer import ImageAnalyzer
 from multiprocessing import Queue, Process, Value, Event, Manager
-import threading
 import time
-import cv2
-import numpy as np
 import psutil
+import pygetwindow as gw
 
 class DeathCounter:
     def __init__(self, process_name, window_name, fps=5):
         self.check_text = "YOU DIED"
-
-        self.capture_queue = Queue()
-        self.result_queue = Queue()
-        self.process_ready = Value('b', False)
-
-        self.stop_event = Event()
-        self.found_event = Event()
-
         self.process_name = process_name
         self.window_name = window_name
         self.fps = fps
 
-        self.analyzer_process = ImageAnalyzerProcess(self.capture_queue, self.result_queue, self.check_text, self.process_ready, self.found_event, self.stop_event)
+        self.capture_queue = Queue()
+        # event set when ocr found the death screen
+        self.found_event = Event()
+        # event set when game crashes or game stopped
+        self.stop_event = Event()
 
+        self.analyzer_ready = Value('b', False)
+        self.observer_ready = Value('b', False)
 
-        self.observer_thread = threading.Thread(target=self.observer_task, args=("eldenring.exe", "elden ring", self.capture_queue, self.found_event, self.stop_event))
-        self.observer_thread.daemon = True
+        self.analyzer_process = Process(target=DeathCounter.analyzer_task, args=(self.check_text, self.capture_queue, self.analyzer_ready, self.found_event, self.stop_event))
+        self.observer_process = Process(target=DeathCounter.observer_task, args=("eldenring.exe", "elden ring", self.fps, self.capture_queue, self.stop_event))
+        
+    def start(self):
+        self.analyzer_process.start()
+        print("Started process")
+        self.wait_until_variable(self.analyzer_ready, True, 30)
+        self.observer_process.start()
+    
+    def stop(self):
+        self.stop_event.set()
 
+    def wait_until_variable(self, variable, desired_state, timeout):
         #wait until analyzer process is launched
         start = time.time()
         while True:
-            with self.process_ready.get_lock():
-                if self.process_ready.value:
-                    break
-            time.sleep(2)
-            if time.time() - start > 60:
+            if variable.value == desired_state:
+                break
+            time.sleep(1)
+            if time.time() - start > timeout:
                 raise TimeoutError("Process creation timed out")
-            
-        self.observer_thread.start()
 
-    def is_application_running(self, process_name):
+    @staticmethod
+    def is_application_running(process_name):
         for process in psutil.process_iter(['name']):
             if process_name.lower() in process.info['name'].lower():
                 return True
         return False
-    
 
-    def observer_task(self, process_name, window_name, capture_queue, pause_event, stop_event):
-        while not self.is_application_running(process_name):
-            time.sleep(10)
-        print("process is running")
-        fc = FrameCapture(window_name, capture_queue)
 
-        while self.is_application_running(process_name) and not stop_event.is_set():
-            fc.save_screenshot()
-            time.sleep(1 / self.fps)
+    @staticmethod
+    def observer_task(process_name, window_name, fps, capture_queue, stop_event):
+        while not DeathCounter.is_application_running(process_name):
+            time.sleep(5)
+        
+        fc = FrameCapturer()
 
+        while DeathCounter.is_application_running(process_name) and not stop_event.is_set():
+            active_window = gw.getActiveWindow()
+            if active_window is not None and window_name in active_window.title.lower():
+                capture_queue.put(fc.save_screenshot())
+            time.sleep(1 / fps)
+
+        #if application crashes or stops, also stop the programm
         stop_event.set()
 
-    def stop(self):
-        self.stop_event.set()
+    @staticmethod
+    def analyzer_task(check_text, image_queue, process_ready, found_event, stop_event):
+        ia = ImageAnalyzer(check_text=check_text)
+
+        # process is ready
+        process_ready.value = True
+        
+        while not stop_event.is_set():
+            if not image_queue.empty():
+                img = image_queue.get()
+                if ia.check_image_for_text(img, check_text):
+                    found_event.set()
