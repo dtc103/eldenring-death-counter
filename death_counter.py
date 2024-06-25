@@ -9,7 +9,7 @@ def main():
     dc = DeathCounter(PROCESS_NAME, WINDOW_NAME, 10)
 
     app = QtWidgets.QApplication(sys.argv)
-    win = TransparentWindow(dc.found_event)
+    win = TransparentWindow(dc.found_event, dc.stop_event)
     win.show()
     sys.exit(app.exec_())
 

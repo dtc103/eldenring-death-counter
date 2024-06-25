@@ -56,9 +56,10 @@ class DeathCounter:
         fc = FrameCapture(window_name, capture_queue)
 
         while self.is_application_running(process_name) and not stop_event.is_set():
-            
             fc.save_screenshot()
             time.sleep(1 / self.fps)
+
+        stop_event.set()
 
     def stop(self):
         self.stop_event.set()
