@@ -4,11 +4,11 @@ from Overlay import *
 
 PROCESS_NAME = "eldenring.exe"
 WINDOW_NAME = "elden ring"
-
+MONITOR_IDX = 1
 
 
 def main():
-    dc = DeathCounter(PROCESS_NAME, WINDOW_NAME, 10)
+    dc = DeathCounter(PROCESS_NAME, WINDOW_NAME, MONITOR_IDX, 10)
     dc.start()
 
     app = QtWidgets.QApplication(sys.argv)
@@ -16,6 +16,6 @@ def main():
     win.show()
     sys.exit(app.exec_())
 
-    
+
 if __name__ == "__main__":
     main()

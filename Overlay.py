@@ -6,6 +6,7 @@ import json
 class TransparentWindow(QtWidgets.QWidget):
     def __init__(self, found_event, stop_event):
         super().__init__()
+        #find a way to make relative when calling script from batch file
         self.kill_counter_file = "E:/programming/EldenRingDeathCounter/deaths.json"
         self.found_event = found_event
         self.stop_event = stop_event
