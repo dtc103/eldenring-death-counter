@@ -19,15 +19,13 @@ class TransparentWindow(QtWidgets.QWidget):
 
         screen_size = QtWidgets.QApplication.primaryScreen().size()
 
-        # Set geometry of the window: x, y, width, height
-        height, width = 300, 100
-        self.setGeometry(screen_size.width() - 3*width, 0, 300, 100)
-
         # Label to display the number
         self.label = QtWidgets.QLabel(self)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
         self.label.setStyleSheet("QLabel { font-size: 40px; color: 'white' }")
-        self.label.setGeometry(0, 0, 300, 100)
+
+        # Set geometry of the window: x, y, width, height
+        self.setGeometry(int(screen_size.width() * 0.90), 0, 300, 100)
 
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.updateNumber)

@@ -15,7 +15,6 @@ class FrameCapturer:
         img = cv2.convertScaleAbs(img, alpha=3.0, beta=0)
 
         return img
-
                 
     def capture_frame(self):
         with mss() as sct:
