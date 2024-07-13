@@ -401,4 +401,4 @@ FodyWeavers.xsd
 
 # Other files
 *.json
-.*ipynb
+*.ipynb
